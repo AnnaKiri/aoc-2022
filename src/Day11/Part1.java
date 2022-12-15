@@ -1,93 +1,83 @@
 package Day11;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.TreeSet;
+import java.util.function.LongUnaryOperator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Part1 {
 	public static void main(String[] args) throws IOException {
-		
-		Queue<Item> items0Monkey = new LinkedList<>();
-		items0Monkey.add(new Item(54));
-		items0Monkey.add(new Item(98));
-		items0Monkey.add(new Item(50));
-		items0Monkey.add(new Item(94));
-		items0Monkey.add(new Item(69));
-		items0Monkey.add(new Item(62));
-		items0Monkey.add(new Item(53));
-		items0Monkey.add(new Item(85));
-		
-		Monkey monkey0 = new Monkey(items0Monkey, 3, 2, 1, a -> a * 13, true, 1);
-		
-		Queue<Item> items1Monkey = new LinkedList<>();
-		items1Monkey.add(new Item(71));
-		items1Monkey.add(new Item(55));
-		items1Monkey.add(new Item(82));
-		
-		Monkey monkey1 = new Monkey(items1Monkey, 13, 7, 2, a -> a + 2, true, 1);
-				
-		Queue<Item> items2Monkey = new LinkedList<>();
-		items2Monkey.add(new Item(77));
-		items2Monkey.add(new Item(73));
-		items2Monkey.add(new Item(86));
-		items2Monkey.add(new Item(72));
-		items2Monkey.add(new Item(87));
-		
-		Monkey monkey2 = new Monkey(items2Monkey, 19, 4, 7, a -> a + 8, true, 1);
-		
-		Queue<Item> items3Monkey = new LinkedList<>();
-		items3Monkey.add(new Item(97));
-		items3Monkey.add(new Item(91));
-		
-		Monkey monkey3 = new Monkey(items3Monkey, 17, 6, 5, a -> a + 1, true, 1);
-		
-		Queue<Item> items4Monkey = new LinkedList<>();
-		items4Monkey.add(new Item(78));
-		items4Monkey.add(new Item(97));
-		items4Monkey.add(new Item(51));
-		items4Monkey.add(new Item(85));
-		items4Monkey.add(new Item(66));
-		items4Monkey.add(new Item(63));
-		items4Monkey.add(new Item(62));
-		
-		Monkey monkey4 = new Monkey(items4Monkey, 5, 6, 3, a -> a * 17, true, 1);
-		
-		Queue<Item> items5Monkey = new LinkedList<>();
-		items5Monkey.add(new Item(88));
-		
-		Monkey monkey5 = new Monkey(items5Monkey, 7, 1, 0, a -> a + 3, true, 1);
-		
-		Queue<Item> items6Monkey = new LinkedList<>();
-		items6Monkey.add(new Item(87));
-		items6Monkey.add(new Item(57));
-		items6Monkey.add(new Item(63));
-		items6Monkey.add(new Item(86));
-		items6Monkey.add(new Item(87));
-		items6Monkey.add(new Item(53));
-		
-		Monkey monkey6 = new Monkey(items6Monkey, 11, 5, 0, a -> a * a, true, 1);
-		
-		Queue<Item> items7Monkey = new LinkedList<>();
-		items7Monkey.add(new Item(73));
-		items7Monkey.add(new Item(59));
-		items7Monkey.add(new Item(82));
-		items7Monkey.add(new Item(65));
-		
-		Monkey monkey7 = new Monkey(items7Monkey, 2, 4, 3, a -> a + 6, true, 1);
+		String path = ".\\src\\Day11\\data.txt";
+		final String [] notes = Files.readString(Path.of(path)).split("\r\n\r\n");
 		
 		List<Monkey> monkeyList = new ArrayList<>();
-		monkeyList.add(monkey0);
-		monkeyList.add(monkey1);
-		monkeyList.add(monkey2);
-		monkeyList.add(monkey3);
-		monkeyList.add(monkey4);
-		monkeyList.add(monkey5);
-		monkeyList.add(monkey6);
-		monkeyList.add(monkey7);
+		for (String str : notes) {
+			Matcher itemsMat = Pattern.compile("Starting items: ([(0-9, ]+)").matcher(str);
+			Matcher operationMat = Pattern.compile("Operation: new = old (\\+|\\*) (\\d+|\\w+)").matcher(str);
+			Matcher divisionMat = Pattern.compile("Test: divisible by (\\d+)").matcher(str);
+			Matcher trueMonkeyMat = Pattern.compile("If true: throw to monkey (\\d)").matcher(str);
+			Matcher falseMonkeyMat = Pattern.compile("If false: throw to monkey (\\d)").matcher(str);
 		
+		
+			Queue<Item> itemsMonkey = new LinkedList<>();
+			
+			String items = null;
+			if (itemsMat.find()) {
+				items = itemsMat.group(1);
+			}
+			String[] itemsArray = items.split(", ");
+			for (String string : itemsArray) {
+				itemsMonkey.add(new Item(Integer.parseInt(string)));
+			}
+			
+			LongUnaryOperator operation = null;
+			char symbol;
+			if (operationMat.find()) {
+				symbol = operationMat.group(1).charAt(0);
+
+				if (operationMat.group(2).equals("old")) {
+					if (symbol == '+') {
+						operation = a -> a + a;
+					} else {
+						operation = a -> a * a;
+					}
+				} else {
+					int temp = Integer.parseInt(operationMat.group(2));
+					
+					if (symbol == '+') {
+						operation = a -> a + temp;
+					} else {
+						operation = a -> a * temp;
+					}
+				}
+			}
+			
+			int divider = 0;
+			if (divisionMat.find()) {
+				divider = Integer.parseInt(divisionMat.group(1));
+			}
+			
+			int trueMonkeyID = 0;
+			if (trueMonkeyMat.find()) {
+				trueMonkeyID = Integer.parseInt(trueMonkeyMat.group(1));
+			}
+			
+			int falseMonkeyID = 0;
+			if (falseMonkeyMat.find()) {
+				falseMonkeyID = Integer.parseInt(falseMonkeyMat.group(1));
+			}
+			
+			Monkey monkey = new Monkey(itemsMonkey, divider, trueMonkeyID, falseMonkeyID, operation, true, 1);
+			monkeyList.add(monkey);
+		}
+	
 		for (int i = 0; i < 20; i++) {
 			for (Monkey monkey : monkeyList) {
 				if (!monkey.getItems().isEmpty()) {
@@ -108,4 +98,5 @@ public class Part1 {
 		
 		System.out.println(itemCounters.pollLast() * itemCounters.pollLast());
 	}
+	
 }
